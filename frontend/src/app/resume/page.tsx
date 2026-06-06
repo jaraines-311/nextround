@@ -1,146 +1,143 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText, Plus, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { FileText, Plus, Trash2, CheckCircle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { resumeApi } from '@/lib/api/profile';
+import { relativeTime } from '@/lib/utils';
 
 export default function ResumePage() {
   const [resumes, setResumes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('My Resume');
   const [text, setText] = useState('');
   const [error, setError] = useState('');
 
-  const loadResumes = () => {
-    resumeApi.list().then(setResumes).finally(() => setLoading(false));
-  };
+  const load = () => resumeApi.list().then(setResumes).catch(() => {}).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
 
-  useEffect(() => { loadResumes(); }, []);
-
-  const handleSubmit = async () => {
+  const handleSave = async () => {
     if (!text.trim()) return;
-    setSubmitting(true);
+    setSaving(true);
     setError('');
     try {
       await resumeApi.create({ name, rawText: text });
-      setText('');
       setName('My Resume');
+      setText('');
       setShowForm(false);
-      loadResumes();
+      load();
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to save resume');
+      setError(e.response?.data?.message || 'Failed to save resume.');
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const handleSetActive = async (id: string) => {
-    await resumeApi.setActive(id);
-    loadResumes();
-  };
-
-  const handleDelete = async (id: string) => {
+  const handleSetActive = async (id: string) => { await resumeApi.setActive(id); load(); };
+  const handleDelete    = async (id: string) => {
     if (!confirm('Delete this resume?')) return;
-    await resumeApi.remove(id);
-    loadResumes();
+    await resumeApi.remove(id); load();
   };
 
   return (
-    <DashboardLayout>
-      <div className="mx-auto max-w-3xl p-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Resume</h1>
-            <p className="text-gray-600">AI analyzes your resume to generate tailored interview questions.</p>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add resume
-          </button>
-        </div>
-
+    <DashboardLayout
+      pageTitle="Resume"
+      pageDescription="AI analyses your resume to generate targeted interview questions."
+      actions={
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>
+          <Plus className="h-3.5 w-3.5" />
+          Add resume
+        </Button>
+      }
+    >
+      <div className="mx-auto max-w-2xl space-y-5">
+        {/* Add form */}
         {showForm && (
-          <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 font-semibold text-gray-900">Paste your resume</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Resume name</label>
-              <input
+          <div className="card p-5 animate-fade-in">
+            <h2 className="mb-4 text-sm font-semibold text-neutral-900">Paste your resume</h2>
+            <div className="space-y-4">
+              <Input
+                label="Resume name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
               />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Resume text</label>
-              <textarea
+              <Textarea
+                label="Resume content"
+                hint="Paste the full text of your resume. The more detail, the better your questions."
+                rows={14}
+                placeholder="John Doe\nSenior Software Engineer\n\nExperience:\n..."
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                rows={12}
-                placeholder="Paste your resume content here..."
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none font-mono"
+                className="font-mono text-xs"
               />
-            </div>
-            {error && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-            <div className="flex gap-3">
-              <button
-                onClick={handleSubmit}
-                disabled={!text.trim() || submitting}
-                className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-              >
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save & analyze
-              </button>
-              <button onClick={() => setShowForm(false)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
+              {error && (
+                <div className="rounded-md border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-600">
+                  {error}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button onClick={handleSave} disabled={!text.trim()} loading={saving}>
+                  {saving ? 'Analysing…' : 'Save & analyse'}
+                </Button>
+                <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
             </div>
           </div>
         )}
 
+        {/* List */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+          <div className="space-y-3">
+            {[1, 2].map((i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-neutral-100" />)}
           </div>
-        ) : resumes.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
-            <FileText className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-2 font-medium text-gray-600">No resumes yet</p>
-            <p className="text-sm text-gray-400">Add your first resume to get tailored interview questions.</p>
-          </div>
+        ) : resumes.length === 0 && !showForm ? (
+          <EmptyState
+            icon={FileText}
+            title="No resumes yet"
+            description="Add your resume and NextRound will tailor every interview question to your actual experience."
+            action={{ label: 'Add resume', onClick: () => setShowForm(true) }}
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {resumes.map((r) => (
-              <div key={r.id} className={`rounded-2xl border p-5 ${r.isActive ? 'border-brand-300 bg-brand-50' : 'border-gray-200 bg-white'} shadow-sm`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className={`h-5 w-5 ${r.isActive ? 'text-brand-600' : 'text-gray-400'}`} />
-                    <div>
-                      <p className="font-semibold text-gray-900">{r.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {r.parsedSkills?.slice(0, 5).join(', ') || 'No skills parsed'} · {new Date(r.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
+              <div
+                key={r.id}
+                className={`card flex items-center gap-4 p-4 transition-all ${r.isActive ? 'border-plum-300 bg-plum-50/40' : ''}`}
+              >
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${r.isActive ? 'bg-plum-900' : 'bg-neutral-100'}`}>
+                  <FileText className={`h-5 w-5 ${r.isActive ? 'text-white' : 'text-neutral-400'}`} />
+                </div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    {r.isActive ? (
-                      <span className="flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
-                        <CheckCircle className="h-3 w-3" /> Active
-                      </span>
-                    ) : (
-                      <button onClick={() => handleSetActive(r.id)} className="text-xs font-medium text-brand-600 hover:underline">
-                        Set active
-                      </button>
-                    )}
-                    <button onClick={() => handleDelete(r.id)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <p className="truncate text-sm font-semibold text-neutral-900">{r.name}</p>
+                    {r.isActive && <Badge variant="plum" size="sm" dot>Active</Badge>}
                   </div>
+                  <p className="mt-0.5 truncate text-xs text-neutral-500">
+                    {r.parsedSkills?.slice(0, 5).join(', ') || 'Skills not extracted yet'} · {relativeTime(r.createdAt)}
+                  </p>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {!r.isActive && (
+                    <button
+                      onClick={() => handleSetActive(r.id)}
+                      className="text-xs font-medium text-plum-900 hover:text-plum-dark transition-colors"
+                    >
+                      Set active
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(r.id)}
+                    className="rounded-lg p-1.5 text-neutral-400 hover:bg-danger-50 hover:text-danger-600 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             ))}

@@ -2,93 +2,111 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Plus, Loader2, ArrowRight } from 'lucide-react';
+import { MessageSquare, Plus, ArrowRight } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Badge, statusBadgeVariant } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { interviewsApi } from '@/lib/api/interviews';
-
-const STATUS_COLORS: Record<string, string> = {
-  COMPLETED: 'bg-emerald-100 text-emerald-700',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700',
-  PENDING: 'bg-gray-100 text-gray-600',
-  ABANDONED: 'bg-gray-100 text-gray-400',
-};
+import { relativeTime } from '@/lib/utils';
 
 export default function InterviewsPage() {
-  const [interviews, setInterviews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [page, setPage]         = useState(1);
+  const [totalPages, setTotal]  = useState(1);
 
   const load = (p = 1) => {
-    interviewsApi.list(p, 10).then((r) => {
-      setInterviews(r.data);
-      setTotalPages(r.totalPages);
-    }).finally(() => setLoading(false));
+    setLoading(true);
+    interviewsApi.list(p, 12)
+      .then((r) => { setSessions(r.data ?? []); setTotal(r.totalPages ?? 1); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(page); }, [page]);
 
   return (
-    <DashboardLayout>
-      <div className="mx-auto max-w-3xl p-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Interview Sessions</h1>
-            <p className="text-gray-600">Your complete interview history.</p>
-          </div>
-          <Link href="/interviews/new" className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
-            <Plus className="h-4 w-4" />
+    <DashboardLayout
+      pageTitle="Interview Sessions"
+      pageDescription="Your complete practice history."
+      actions={
+        <Link href="/interviews/new">
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
             New interview
-          </Link>
+          </Button>
+        </Link>
+      }
+    >
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-neutral-100" />)}
         </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-brand-600" /></div>
-        ) : interviews.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
-            <MessageSquare className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-2 font-medium text-gray-600">No interviews yet</p>
-            <Link href="/interviews/new" className="mt-2 inline-block text-sm font-semibold text-brand-600 hover:underline">Start your first →</Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {interviews.map((session) => (
-              <Link key={session.id} href={`/interviews/${session.id}`} className="block rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-brand-200 hover:shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-gray-900">{session.type?.replace('_', ' ')} Interview</p>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[session.status]}`}>
-                        {session.status}
-                      </span>
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{session.mode}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {session.job?.title || 'General'} · {session.turnCount} turns · {new Date(session.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {session.feedbackReport?.overallScore && (
-                      <div className="text-xl font-bold text-brand-600">{session.feedbackReport.overallScore}/10</div>
-                    )}
-                    <ArrowRight className="h-4 w-4 text-gray-400" />
-                  </div>
+      ) : sessions.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="No interviews yet"
+          description="Start your first practice session to build interview confidence."
+          action={{ label: 'Start interview', href: '/interviews/new' }}
+        />
+      ) : (
+        <>
+          <div className="card overflow-hidden">
+            {sessions.map((s, i) => (
+              <Link
+                key={s.id}
+                href={`/interviews/${s.id}`}
+                className={`flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors ${i < sessions.length - 1 ? 'border-b border-neutral-100' : ''}`}
+              >
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-plum-50">
+                  <MessageSquare className="h-4 w-4 text-plum-900" />
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-neutral-900">
+                      {s.type?.replace('_', ' ')} Interview
+                    </p>
+                    <Badge variant={statusBadgeVariant(s.status)} size="sm" dot>{s.status}</Badge>
+                    <Badge variant="default" size="sm">{s.mode}</Badge>
+                  </div>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    {s.job?.title ? `${s.job.title}${s.job.company ? ` @ ${s.job.company}` : ''}` : 'General practice'}
+                    {' · '}{s.turnCount} turns · {relativeTime(s.createdAt)}
+                  </p>
+                </div>
+                {s.feedbackReport?.overallScore != null && (
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-lg font-bold text-plum-900 tabular-nums">
+                      {s.feedbackReport.overallScore?.toFixed(1)}
+                    </p>
+                    <p className="text-2xs text-neutral-400">/ 10</p>
+                  </div>
+                )}
+                <ArrowRight className="h-4 w-4 flex-shrink-0 text-neutral-300" />
               </Link>
             ))}
           </div>
-        )}
 
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`h-8 w-8 rounded-lg text-sm font-medium ${page === p ? 'bg-brand-600 text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'}`}>
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+          {totalPages > 1 && (
+            <div className="mt-5 flex justify-center gap-1.5">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`h-8 min-w-[2rem] rounded-lg px-2 text-sm font-medium transition-colors ${
+                    page === p
+                      ? 'bg-plum-900 text-white'
+                      : 'border border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </DashboardLayout>
   );
 }

@@ -2,80 +2,95 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Briefcase } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { jobsApi } from '@/lib/api/profile';
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [company, setCompany] = useState('');
+  const [title,       setTitle]       = useState('');
+  const [company,     setCompany]     = useState('');
   const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
     if (!description.trim()) return;
-    setSubmitting(true);
+    setSaving(true);
     setError('');
     try {
-      const job = await jobsApi.create({ title: title || undefined, company: company || undefined, rawDescription: description });
+      await jobsApi.create({
+        title:          title || undefined,
+        company:        company || undefined,
+        rawDescription: description,
+      });
       router.push('/jobs');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save job description');
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Failed to save. Please try again.');
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="mx-auto max-w-2xl p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <Briefcase className="h-6 w-6 text-brand-600" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Add job description</h1>
-            <p className="text-gray-600">AI will parse the JD and generate targeted interview questions.</p>
-          </div>
-        </div>
+    <DashboardLayout pageTitle="Add Job Description">
+      <div className="mx-auto max-w-2xl">
+        <Link href="/jobs" className="mb-5 inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700">
+          <ChevronLeft className="h-4 w-4" />
+          Back to jobs
+        </Link>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job title <span className="text-gray-400">(optional)</span></label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Software Engineer" className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company <span className="text-gray-400">(optional)</span></label>
-              <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Corp" className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none" />
-            </div>
+        <div className="card p-5 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-neutral-900">Job details</h2>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              Paste the full job description. NextRound's AI will extract skills, seniority, and requirements to tailor your interview questions.
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Job description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={14}
-              placeholder="Paste the full job description here..."
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none"
-              required
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Job title"
+              optional
+              placeholder="Senior Software Engineer"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <Input
+              label="Company"
+              optional
+              placeholder="Acme Corp"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
             />
           </div>
 
-          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+          <Textarea
+            label="Full job description"
+            hint="Paste the complete job posting for the most accurate question generation."
+            rows={14}
+            placeholder="We're looking for a Senior Software Engineer to join our platform team…"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
 
-          <div className="flex gap-3">
-            <button type="submit" disabled={!description.trim() || submitting} className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50">
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Save job description
-            </button>
-            <button type="button" onClick={() => router.push('/jobs')} className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Cancel
-            </button>
+          {error && (
+            <div className="rounded-md border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-600">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={!description.trim()} loading={saving}>
+              {saving ? 'Analysing…' : 'Save job description'}
+            </Button>
+            <Button variant="secondary" onClick={() => router.push('/jobs')}>Cancel</Button>
           </div>
-        </form>
+        </div>
       </div>
     </DashboardLayout>
   );
