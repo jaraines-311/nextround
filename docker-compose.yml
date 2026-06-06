@@ -1,0 +1,85 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nextround-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nextround}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nextround_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-nextround}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nextround}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nextround-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nextround}:${POSTGRES_PASSWORD:-nextround_secret}@postgres:5432/${POSTGRES_DB:-nextround}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${BACKEND_PORT:-4000}
+      JWT_SECRET: ${JWT_SECRET:-change_this_in_production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID}
+      STRIPE_PREMIUM_PRICE_ID: ${STRIPE_PREMIUM_PRICE_ID}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      FREE_INITIAL_CREDITS: ${FREE_INITIAL_CREDITS:-1500}
+      PRO_MONTHLY_CREDITS: ${PRO_MONTHLY_CREDITS:-5000}
+      PREMIUM_MONTHLY_CREDITS: ${PREMIUM_MONTHLY_CREDITS:-15000}
+      MAX_CREDIT_MULTIPLIER: ${MAX_CREDIT_MULTIPLIER:-2}
+      VOICE_INTERVIEW_CREDIT_COST: ${VOICE_INTERVIEW_CREDIT_COST:-50}
+      FEEDBACK_REPORT_CREDIT_COST: ${FEEDBACK_REPORT_CREDIT_COST:-100}
+      QUESTION_GENERATION_CREDIT_COST: ${QUESTION_GENERATION_CREDIT_COST:-20}
+      RESUME_ANALYSIS_CREDIT_COST: ${RESUME_ANALYSIS_CREDIT_COST:-75}
+      JOB_ANALYSIS_CREDIT_COST: ${JOB_ANALYSIS_CREDIT_COST:-50}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      FREE_FOREVER_ACCESS_CODE: ${FREE_FOREVER_ACCESS_CODE:-nextround_free_forever}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      SENTRY_DSN: ${SENTRY_DSN_BACKEND}
+    ports:
+      - '${BACKEND_PORT:-4000}:4000'
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nextround-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
+      NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST:-https://app.posthog.com}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+    ports:
+      - '${FRONTEND_PORT:-3000}:3000'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:

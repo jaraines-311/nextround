@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BillingOverride {
+  NONE
+  FREE_FOREVER
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+  PAUSED
+}
+
+enum Industry {
+  SOFTWARE_ENGINEERING
+  DATA_ENGINEERING
+  PRODUCT_MANAGEMENT
+  SALES
+  MARKETING
+  CUSTOMER_SUCCESS
+  OTHER
+}
+
+enum InterviewType {
+  RECRUITER_SCREEN
+  HIRING_MANAGER
+  TECHNICAL
+  BEHAVIORAL
+}
+
+enum InterviewMode {
+  TEXT
+  VOICE
+}
+
+enum InterviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum CreditTransactionType {
+  GRANT_INITIAL
+  GRANT_MONTHLY
+  PURCHASE
+  CONSUME
+  ADMIN_ADJUSTMENT
+  EXPIRE
+}
+
+enum AIProvider {
+  OPENAI
+  ANTHROPIC
+  MOCK
+}
+
+enum SeniorityLevel {
+  ENTRY
+  MID
+  SENIOR
+  STAFF
+  PRINCIPAL
+  DIRECTOR
+  VP
+  C_LEVEL
+}
+
+// ============================================================
+// User
+// ============================================================
+
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  role            Role            @default(USER)
+  billingOverride BillingOverride @default(NONE)
+  targetIndustry  Industry        @default(SOFTWARE_ENGINEERING)
+  emailVerified   Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  candidateProfile  CandidateProfile?
+  resumes           Resume[]
+  jobs              Job[]
+  interviewSessions InterviewSession[]
+  feedbackReports   FeedbackReport[]
+  subscription      Subscription?
+  creditBalance     CreditBalance?
+  creditTransactions CreditTransaction[]
+  creditGrants      CreditGrant[]
+  creditPurchases   CreditPurchase[]
+  usageEvents       UsageEvent[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// ============================================================
+// Candidate Profile
+// ============================================================
+
+model CandidateProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  summary           String?  @db.Text
+  skills            String[] @default([])
+  yearsOfExperience Int?
+  targetIndustry    Industry @default(SOFTWARE_ENGINEERING)
+  targetRoles       String[] @default([])
+  strengths         String[] @default([])
+  weaknesses        String[] @default([])
+  userNotes         String?  @db.Text
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_profiles")
+}
+
+// ============================================================
+// Resume
+// ============================================================
+
+model Resume {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String   @default("My Resume")
+  rawText       String   @db.Text
+  fileUrl       String?
+  fileName      String?
+  fileMimeType  String?
+  parsedSkills  String[] @default([])
+  parsedSummary String?  @db.Text
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interviewSessions InterviewSession[]
+
+  @@map("resumes")
+}
+
+// ============================================================
+// Job
+// ============================================================
+
+model Job {
+  id               String         @id @default(cuid())
+  userId           String
+  title            String
+  company          String?
+  rawDescription   String         @db.Text
+  requiredSkills   String[]       @default([])
+  preferredSkills  String[]       @default([])
+  seniorityLevel   SeniorityLevel @default(MID)
+  industry         Industry       @default(SOFTWARE_ENGINEERING)
+  location         String?
+  salaryMin        Int?
+  salaryMax        Int?
+  parsedMetadata   Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interviewSessions InterviewSession[]
+
+  @@map("jobs")
+}
+
+// ============================================================
+// Interview
+// ============================================================
+
+model InterviewSession {
+  id              String          @id @default(cuid())
+  userId          String
+  resumeId        String?
+  jobId           String?
+  type            InterviewType   @default(TECHNICAL)
+  mode            InterviewMode   @default(TEXT)
+  status          InterviewStatus @default(PENDING)
+  title           String?
+  durationSeconds Int?
+  turnCount       Int             @default(0)
+  totalCreditsUsed Int            @default(0)
+  transcriptText  String?         @db.Text
+  audioMetadata   Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  completedAt     DateTime?
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume?           @relation(fields: [resumeId], references: [id])
+  job            Job?              @relation(fields: [jobId], references: [id])
+  turns          InterviewTurn[]
+  feedbackReport FeedbackReport?
+  usageEvents    UsageEvent[]
+
+  @@map("interview_sessions")
+}
+
+model InterviewTurn {
+  id                String   @id @default(cuid())
+  sessionId         String
+  turnNumber        Int
+  role              String   // 'assistant' | 'user'
+  content           String   @db.Text
+  audioUrl          String?
+  durationSeconds   Float?
+  tokensUsed        Int?
+  creditsConsumed   Int      @default(0)
+  aiProvider        AIProvider?
+  aiModel           String?
+  createdAt         DateTime @default(now())
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, turnNumber])
+  @@map("interview_turns")
+}
+
+// ============================================================
+// Feedback
+// ============================================================
+
+model FeedbackReport {
+  id                   String   @id @default(cuid())
+  userId               String
+  sessionId            String   @unique
+  overallScore         Float?
+  communicationScore   Float?
+  technicalDepthScore  Float?
+  roleFitScore         Float?
+  confidenceScore      Float?
+  strengths            String[] @default([])
+  weaknesses           String[] @default([])
+  suggestedAnswers     Json?
+  studyTopics          String[] @default([])
+  followUpQuestions    String[] @default([])
+  rawFeedbackJson      Json?
+  creditsConsumed      Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("feedback_reports")
+}
+
+// ============================================================
+// Billing / Subscription
+// ============================================================
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String             @unique
+  stripeCustomerId       String             @unique
+  stripeSubscriptionId   String?            @unique
+  stripePriceId          String?
+  plan                   PlanTier           @default(FREE)
+  pendingPlan            PlanTier?
+  status                 SubscriptionStatus @default(ACTIVE)
+  billingPeriodStart     DateTime?
+  billingPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  trialEnd               DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// ============================================================
+// AI Credits
+// ============================================================
+
+model CreditBalance {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  subscriptionCredits  Int      @default(0)
+  purchasedCredits     Int      @default(0)
+  lifetimeGranted      Int      @default(0)
+  lifetimeConsumed     Int      @default(0)
+  lifetimePurchased    Int      @default(0)
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_balances")
+}
+
+model CreditTransaction {
+  id              String                @id @default(cuid())
+  userId          String
+  type            CreditTransactionType
+  amount          Int
+  balanceBefore   Int
+  balanceAfter    Int
+  description     String?
+  metadata        Json?
+  relatedGrantId  String?
+  relatedPurchaseId String?
+  relatedUsageId  String?
+  createdAt       DateTime              @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("credit_transactions")
+}
+
+model CreditGrant {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Int
+  plan          PlanTier
+  reason        String?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_grants")
+}
+
+model CreditPurchase {
+  id                    String   @id @default(cuid())
+  userId                String
+  stripePaymentIntentId String?  @unique
+  stripeSessionId       String?  @unique
+  amount                Int
+  priceInCents          Int
+  status                String   @default("pending")
+  createdAt             DateTime @default(now())
+  completedAt           DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credit_purchases")
+}
+
+// ============================================================
+// Usage Tracking
+// ============================================================
+
+model UsageEvent {
+  id              String     @id @default(cuid())
+  userId          String
+  sessionId       String?
+  feature         String
+  creditsConsumed Int        @default(0)
+  tokensUsed      Int?
+  providerCostUsd Float?
+  aiProvider      AIProvider?
+  aiModel         String?
+  metadata        Json?
+  createdAt       DateTime   @default(now())
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session InterviewSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([feature, createdAt])
+  @@map("usage_events")
+}
+
+// ============================================================
+// AI / Prompt Templates
+// ============================================================
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  template    String   @db.Text
+  variables   String[] @default([])
+  isActive    Boolean  @default(true)
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("prompt_templates")
+}

@@ -1,0 +1,27 @@
+import { apiClient } from './client';
+
+export const profileApi = {
+  get: () => apiClient.get('/candidate-profile').then((r) => r.data),
+  update: (data: any) => apiClient.put('/candidate-profile', data).then((r) => r.data),
+};
+
+export const resumeApi = {
+  list: () => apiClient.get('/resumes').then((r) => r.data),
+  get: (id: string) => apiClient.get(`/resumes/${id}`).then((r) => r.data),
+  create: (data: any) => apiClient.post('/resumes', data).then((r) => r.data),
+  update: (id: string, data: any) => apiClient.put(`/resumes/${id}`, data).then((r) => r.data),
+  setActive: (id: string) => apiClient.patch(`/resumes/${id}/activate`).then((r) => r.data),
+  remove: (id: string) => apiClient.delete(`/resumes/${id}`).then((r) => r.data),
+};
+
+export const jobsApi = {
+  list: () => apiClient.get('/jobs').then((r) => r.data),
+  get: (id: string) => apiClient.get(`/jobs/${id}`).then((r) => r.data),
+  create: (data: any) => apiClient.post('/jobs', data).then((r) => r.data),
+  update: (id: string, data: any) => apiClient.put(`/jobs/${id}`, data).then((r) => r.data),
+  remove: (id: string) => apiClient.delete(`/jobs/${id}`).then((r) => r.data),
+};
+
+export const analyticsApi = {
+  getDashboard: () => apiClient.get('/analytics/dashboard').then((r) => r.data),
+};
