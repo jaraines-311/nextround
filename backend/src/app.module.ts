@@ -14,6 +14,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -38,5 +39,6 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     CreditsModule,
     AnalyticsModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

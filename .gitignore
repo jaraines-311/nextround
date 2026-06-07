@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+.next/
+out/
+
+# Environment files — never commit these
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Prisma generated client (regenerated on build)
+backend/node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/

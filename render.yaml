@@ -1,0 +1,93 @@
+services:
+  - type: web
+    name: nextround-backend
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: node dist/main
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      # ── App ──────────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+
+      # ── Database (Supabase) ───────────────────────────────────────────────
+      - key: DATABASE_URL
+        sync: false   # Set this in Render dashboard → your Supabase connection string
+
+      # ── Auth ─────────────────────────────────────────────────────────────
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      # ── Frontend URL (set after Vercel deploy) ────────────────────────────
+      - key: FRONTEND_URL
+        sync: false   # e.g. https://nextround.vercel.app
+
+      # ── AI Provider ───────────────────────────────────────────────────────
+      - key: AI_PROVIDER
+        value: openai   # Change to 'anthropic' if preferred
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # ── Stripe ───────────────────────────────────────────────────────────
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRO_PRICE_ID
+        sync: false
+      - key: STRIPE_PREMIUM_PRICE_ID
+        sync: false
+      - key: STRIPE_CREDITS_1000_PRICE_ID
+        sync: false
+      - key: STRIPE_CREDITS_5000_PRICE_ID
+        sync: false
+      - key: STRIPE_CREDITS_10000_PRICE_ID
+        sync: false
+
+      # ── AI Credits ────────────────────────────────────────────────────────
+      - key: FREE_INITIAL_CREDITS
+        value: 1500
+      - key: PRO_MONTHLY_CREDITS
+        value: 5000
+      - key: PREMIUM_MONTHLY_CREDITS
+        value: 15000
+      - key: MAX_CREDIT_MULTIPLIER
+        value: 2
+      - key: VOICE_INTERVIEW_CREDIT_COST
+        value: 50
+      - key: FEEDBACK_REPORT_CREDIT_COST
+        value: 100
+      - key: QUESTION_GENERATION_CREDIT_COST
+        value: 20
+      - key: RESUME_ANALYSIS_CREDIT_COST
+        value: 75
+      - key: JOB_ANALYSIS_CREDIT_COST
+        value: 50
+
+      # ── Admin ─────────────────────────────────────────────────────────────
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: FREE_FOREVER_ACCESS_CODE
+        sync: false
+
+      # ── Supabase Storage ──────────────────────────────────────────────────
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: nextround-resumes
+
+      # ── Sentry ────────────────────────────────────────────────────────────
+      - key: SENTRY_DSN_BACKEND
+        sync: false
