@@ -31,7 +31,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    let billingOverride = BillingOverride.NONE;
+    let billingOverride: BillingOverride = BillingOverride.NONE;
     if (dto.accessCode && dto.accessCode === this.config.get('admin.freeForeverAccessCode')) {
       billingOverride = BillingOverride.FREE_FOREVER;
     }

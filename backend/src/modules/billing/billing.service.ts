@@ -22,7 +22,7 @@ export class BillingService {
   ) {
     const secretKey = config.get<string>('stripe.secretKey');
     if (secretKey) {
-      this.stripe = new Stripe(secretKey, { apiVersion: '2024-06-20' });
+      this.stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' });
     } else {
       this.logger.warn('Stripe secret key not configured');
     }
@@ -131,7 +131,7 @@ export class BillingService {
         await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
       case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data.object as Stripe.CheckoutSession);
+        await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       case 'invoice.payment_succeeded':
         await this.handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
@@ -196,7 +196,7 @@ export class BillingService {
     });
   }
 
-  private async handleCheckoutCompleted(session: Stripe.CheckoutSession) {
+  private async handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (session.metadata?.type === 'credit_purchase') {
       const { userId, creditAmount } = session.metadata;
       const credits = parseInt(creditAmount, 10);
