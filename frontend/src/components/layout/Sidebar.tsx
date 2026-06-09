@@ -20,7 +20,7 @@ interface NavItem {
 
 const primary: NavItem[] = [
   { href: '/dashboard',   label: 'Dashboard',          icon: LayoutDashboard, exact: true },
-  { href: '/interviews',  label: 'Interviews',          icon: MessageSquare },
+  { href: '/interviews',  label: 'Practice',            icon: MessageSquare },
   { href: '/jobs',        label: 'Job Prospects',    icon: Briefcase },
   { href: '/feedback',    label: 'Feedback Reports',    icon: BarChart3 },
   { href: '/profile',     label: 'Profile',             icon: User },

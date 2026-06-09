@@ -65,9 +65,9 @@ function StartInterviewCard() {
           <Mic className="h-3 w-3" />
           Ready to practice
         </div>
-        <h2 className="mt-3 text-xl font-bold">Start a new interview session</h2>
+        <h2 className="mt-3 text-xl font-bold">Start a new practice session</h2>
         <p className="mt-1.5 text-sm text-white/75">
-          Choose your interview type, paste a job description, and the AI will guide you through a realistic practice session.
+          Choose your interview type, select a job prospect, and the AI will guide you through a realistic practice session.
         </p>
         <Link href="/interviews/new">
           <button className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-plum-900 shadow-sm hover:bg-white/90 transition-colors">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
           {/* Recent interviews */}
           <div className="card">
             <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3.5">
-              <h2 className="text-sm font-semibold text-neutral-900">Recent Interview Sessions</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">Recent Practice Sessions</h2>
               <Link href="/interviews" className="flex items-center gap-1 text-xs font-medium text-plum-900 hover:text-plum-dark">
                 View all <ArrowRight className="h-3 w-3" />
               </Link>
@@ -196,9 +196,9 @@ export default function DashboardPage() {
             ) : interviews.length === 0 ? (
               <EmptyState
                 icon={MessageSquare}
-                title="No interviews yet"
-                description="Start a practice session to see it here."
-                action={{ label: 'Start interview', href: '/interviews/new' }}
+                title="No practice sessions yet"
+                description="Start an AI practice session to see it here."
+                action={{ label: 'Start practice', href: '/interviews/new' }}
               />
             ) : (
               <div>

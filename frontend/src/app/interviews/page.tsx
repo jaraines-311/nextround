@@ -28,13 +28,13 @@ export default function InterviewsPage() {
 
   return (
     <DashboardLayout
-      pageTitle="Interview Sessions"
-      pageDescription="Your complete practice history."
+      pageTitle="Practice Sessions"
+      pageDescription="Your complete AI practice history."
       actions={
         <Link href="/interviews/new">
           <Button size="sm">
             <Plus className="h-3.5 w-3.5" />
-            New interview
+            New session
           </Button>
         </Link>
       }
@@ -46,9 +46,9 @@ export default function InterviewsPage() {
       ) : sessions.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
-          title="No interviews yet"
-          description="Start your first practice session to build interview confidence."
-          action={{ label: 'Start interview', href: '/interviews/new' }}
+          title="No practice sessions yet"
+          description="Start your first AI practice session to build interview confidence."
+          action={{ label: 'Start practice', href: '/interviews/new' }}
         />
       ) : (
         <>
