@@ -1,4 +1,4 @@
-import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, IsUrl } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SeniorityLevel } from '@prisma/client';
 
@@ -31,4 +31,24 @@ export class CreateJobDto {
   @IsEnum(SeniorityLevel)
   @IsOptional()
   seniorityLevel?: SeniorityLevel;
+
+  @ApiPropertyOptional()
+  @IsInt()
+  @IsOptional()
+  salaryMin?: number;
+
+  @ApiPropertyOptional()
+  @IsInt()
+  @IsOptional()
+  salaryMax?: number;
+
+  @ApiPropertyOptional({ description: 'What the candidate intends to ask for' })
+  @IsInt()
+  @IsOptional()
+  targetAsk?: number;
+
+  @ApiPropertyOptional()
+  @IsUrl()
+  @IsOptional()
+  sourceUrl?: string;
 }

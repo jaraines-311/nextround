@@ -10,27 +10,34 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { jobsApi } from '@/lib/api/profile';
 import { relativeTime } from '@/lib/utils';
 
+function formatSalary(n: number) {
+  return n >= 1000 ? `$${(n / 1000).toFixed(0)}k` : `$${n}`;
+}
+
 export default function JobsPage() {
-  const [jobs, setJobs]     = useState<any[]>([]);
+  const [jobs, setJobs]       = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () => { setLoading(true); jobsApi.list().then(setJobs).catch(() => {}).finally(() => setLoading(false)); };
+  const load = () => {
+    setLoading(true);
+    jobsApi.list().then(setJobs).catch(() => {}).finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this job description?')) return;
+    if (!confirm('Delete this job prospect?')) return;
     await jobsApi.remove(id); load();
   };
 
   return (
     <DashboardLayout
-      pageTitle="Job Descriptions"
-      pageDescription="Saved jobs generate targeted, role-specific interview questions."
+      pageTitle="Job Prospects"
+      pageDescription="Saved prospects generate targeted, role-specific interview questions."
       actions={
         <Link href="/jobs/new">
           <Button size="sm">
             <Plus className="h-3.5 w-3.5" />
-            Add job
+            Add prospect
           </Button>
         </Link>
       }
@@ -42,9 +49,9 @@ export default function JobsPage() {
       ) : jobs.length === 0 ? (
         <EmptyState
           icon={Briefcase}
-          title="No job descriptions yet"
-          description="Add the job you're targeting and NextRound will tailor every question to that role."
-          action={{ label: 'Add job description', href: '/jobs/new' }}
+          title="No job prospects yet"
+          description="Add a job you're targeting and NextRound will tailor every question to that role."
+          action={{ label: 'Add job prospect', href: '/jobs/new' }}
         />
       ) : (
         <div className="card overflow-hidden">
@@ -65,7 +72,11 @@ export default function JobsPage() {
                 </div>
                 <p className="mt-0.5 truncate text-xs text-neutral-500">
                   {job.company || 'No company'}
-                  {job.requiredSkills?.length > 0 ? ` · ${job.requiredSkills.slice(0, 4).join(', ')}` : ''}
+                  {job.salaryMin || job.salaryMax
+                    ? ` · ${job.salaryMin ? formatSalary(job.salaryMin) : '?'} – ${job.salaryMax ? formatSalary(job.salaryMax) : '?'}`
+                    : ''}
+                  {job.targetAsk ? ` · asking ${formatSalary(job.targetAsk)}` : ''}
+                  {job.requiredSkills?.length > 0 ? ` · ${job.requiredSkills.slice(0, 3).join(', ')}` : ''}
                   {' · '}{relativeTime(job.createdAt)}
                 </p>
               </div>

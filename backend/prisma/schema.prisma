@@ -205,6 +205,8 @@ model Job {
   location         String?
   salaryMin        Int?
   salaryMax        Int?
+  targetAsk        Int?
+  sourceUrl        String?
   parsedMetadata   Json?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

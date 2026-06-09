@@ -26,6 +26,7 @@ export const jobsApi = {
   list: () => apiClient.get('/jobs').then((r) => r.data),
   get: (id: string) => apiClient.get(`/jobs/${id}`).then((r) => r.data),
   create: (data: any) => apiClient.post('/jobs', data).then((r) => r.data),
+  fetchUrl: (url: string) => apiClient.post('/jobs/fetch-url', { url }).then((r) => r.data),
   update: (id: string, data: any) => apiClient.put(`/jobs/${id}`, data).then((r) => r.data),
   remove: (id: string) => apiClient.delete(`/jobs/${id}`).then((r) => r.data),
 };

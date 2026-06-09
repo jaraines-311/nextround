@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { IsUrl } from 'class-validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -13,9 +14,16 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Add a job description (AI-parsed)' })
+  @ApiOperation({ summary: 'Add a job prospect (AI-parsed)' })
   async create(@Request() req, @Body() dto: CreateJobDto) {
     return this.jobsService.create(req.user.userId, dto);
+  }
+
+  @Post('fetch-url')
+  @ApiOperation({ summary: 'Fetch and parse a job posting from a URL' })
+  @ApiBody({ schema: { properties: { url: { type: 'string' } } } })
+  async fetchUrl(@Body('url') url: string) {
+    return this.jobsService.fetchFromUrl(url);
   }
 
   @Get()
