@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Mic, MessageSquare, FileText, Briefcase, ArrowRight, BarChart3, Plus } from 'lucide-react';
+import { Mic, MessageSquare, FileText, Briefcase, ArrowRight, BarChart3, Plus, Calendar } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge, statusBadgeVariant } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuthStore } from '@/lib/store/auth.store';
 import { interviewsApi } from '@/lib/api/interviews';
+import { jobsApi } from '@/lib/api/profile';
 import { formatCredits, relativeTime, planDisplayName } from '@/lib/utils';
 
 // ─── Credit meter ──────────────────────────────────────────────────────────
@@ -81,16 +82,38 @@ function StartInterviewCard() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 
+function daysUntil(date: string) {
+  const d = Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+  if (d === 0) return 'today';
+  if (d === 1) return 'tomorrow';
+  return `in ${d} days`;
+}
+
+function interviewTypeLabel(value: string) {
+  const map: Record<string, string> = {
+    RECRUITER_SCREEN: 'Recruiter Screen',
+    HIRING_MANAGER: 'Hiring Manager',
+    TECHNICAL: 'Technical',
+    BEHAVIORAL: 'Behavioral',
+    GENERAL: 'Interview',
+  };
+  return map[value] ?? value;
+}
+
 export default function DashboardPage() {
   const user    = useAuthStore((s) => s.user);
-  const [interviews, setInterviews] = useState<any[]>([]);
+  const [interviews, setInterviews]               = useState<any[]>([]);
+  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    interviewsApi.list(1, 5)
-      .then((r) => setInterviews(r.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      interviewsApi.list(1, 5).then((r) => r.data ?? []),
+      jobsApi.upcomingInterviews().catch(() => []),
+    ]).then(([sessions, upcoming]) => {
+      setInterviews(sessions);
+      setUpcomingInterviews(upcoming);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const creditTotal =
@@ -120,6 +143,34 @@ export default function DashboardPage() {
         {/* Left column: 2 wide */}
         <div className="space-y-5 lg:col-span-2">
           <StartInterviewCard />
+
+          {/* Upcoming interview nudges */}
+          {upcomingInterviews.length > 0 && (
+            <div className="space-y-2">
+              {upcomingInterviews.map((ui: any) => {
+                const company = ui.job?.company || ui.job?.title || 'your interview';
+                const typeLabel = interviewTypeLabel(ui.type);
+                const when = daysUntil(ui.scheduledAt);
+                return (
+                  <div key={ui.id} className="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <Calendar className="h-5 w-5 flex-shrink-0 text-amber-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-amber-900">
+                        {typeLabel} with {company} — {when}
+                      </p>
+                      <p className="text-xs text-amber-700">Have you practiced yet?</p>
+                    </div>
+                    <Link
+                      href={`/interviews/new?jobId=${ui.job?.id}&type=${ui.type === 'GENERAL' ? 'BEHAVIORAL' : ui.type}`}
+                      className="flex-shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+                    >
+                      Practice now
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Recent interviews */}
           <div className="card">
@@ -201,7 +252,7 @@ export default function DashboardPage() {
             <div className="divide-y divide-neutral-100">
               {[
                 { href: '/resume',    icon: FileText,     label: 'Upload your resume',       sub: 'AI extracts your skills' },
-                { href: '/jobs/new',  icon: Briefcase,    label: 'Add a job description',    sub: 'Personalise your questions' },
+                { href: '/jobs/new',  icon: Briefcase,    label: 'Add a job prospect',       sub: 'Personalise your questions' },
                 { href: '/profile',   icon: BarChart3,    label: 'Complete your profile',    sub: 'Improve question relevance' },
               ].map((action) => (
                 <Link

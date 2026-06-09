@@ -63,7 +63,7 @@ export default function JobsPage() {
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-neutral-100">
                 <Briefcase className="h-4 w-4 text-neutral-500" />
               </div>
-              <div className="min-w-0 flex-1">
+              <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1 hover:text-plum-900 transition-colors">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-medium text-neutral-900">
                     {job.title || 'Untitled Job'}
@@ -79,7 +79,7 @@ export default function JobsPage() {
                   {job.requiredSkills?.length > 0 ? ` · ${job.requiredSkills.slice(0, 3).join(', ')}` : ''}
                   {' · '}{relativeTime(job.createdAt)}
                 </p>
-              </div>
+              </Link>
               <div className="flex flex-shrink-0 items-center gap-2">
                 <Link
                   href={`/interviews/new?jobId=${job.id}`}

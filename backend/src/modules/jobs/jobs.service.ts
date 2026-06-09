@@ -6,6 +6,7 @@ import { CreditsService } from '../credits/credits.service';
 import { JOB_ANALYSIS_PROMPT } from '../ai/prompts/interview.prompts';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
+import { CreateJobInterviewDto } from './dto/create-job-interview.dto';
 
 @Injectable()
 export class JobsService {
@@ -52,9 +53,77 @@ export class JobsService {
         salaryMax: dto.salaryMax ?? null,
         targetAsk: dto.targetAsk ?? null,
         sourceUrl: dto.sourceUrl ?? null,
+        status: dto.status ?? 'INTERESTED',
+        appliedAt: dto.appliedAt ? new Date(dto.appliedAt) : null,
         parsedMetadata,
       },
     });
+  }
+
+  async findAllWithInterviews(userId: string) {
+    return this.prisma.job.findMany({
+      where: { userId },
+      include: { jobInterviews: { orderBy: { scheduledAt: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOneWithInterviews(userId: string, id: string) {
+    const job = await this.prisma.job.findFirst({
+      where: { id, userId },
+      include: { jobInterviews: { orderBy: { scheduledAt: 'asc' } } },
+    });
+    if (!job) throw new NotFoundException('Job not found');
+    return job;
+  }
+
+  async getUpcomingInterviews(userId: string) {
+    return this.prisma.jobInterview.findMany({
+      where: {
+        userId,
+        status: 'SCHEDULED',
+        scheduledAt: { gte: new Date() },
+      },
+      include: { job: { select: { id: true, title: true, company: true } } },
+      orderBy: { scheduledAt: 'asc' },
+      take: 5,
+    });
+  }
+
+  async createInterview(userId: string, jobId: string, dto: CreateJobInterviewDto) {
+    await this.findOne(userId, jobId);
+    return this.prisma.jobInterview.create({
+      data: {
+        jobId,
+        userId,
+        type: dto.type ?? 'GENERAL',
+        status: dto.status ?? 'SCHEDULED',
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
+        notes: dto.notes ?? null,
+      },
+    });
+  }
+
+  async updateInterview(userId: string, interviewId: string, dto: Partial<CreateJobInterviewDto>) {
+    const record = await this.prisma.jobInterview.findFirst({ where: { id: interviewId, userId } });
+    if (!record) throw new NotFoundException('Interview not found');
+    return this.prisma.jobInterview.update({
+      where: { id: interviewId },
+      data: {
+        ...(dto.type && { type: dto.type }),
+        ...(dto.status && { status: dto.status }),
+        ...(dto.scheduledAt !== undefined && { scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.status === 'COMPLETED' && { completedAt: new Date() }),
+      },
+    });
+  }
+
+  async deleteInterview(userId: string, interviewId: string) {
+    const record = await this.prisma.jobInterview.findFirst({ where: { id: interviewId, userId } });
+    if (!record) throw new NotFoundException('Interview not found');
+    await this.prisma.jobInterview.delete({ where: { id: interviewId } });
+    return { message: 'Deleted' };
   }
 
   async fetchFromUrl(url: string) {

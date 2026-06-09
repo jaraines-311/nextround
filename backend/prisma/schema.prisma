@@ -80,6 +80,31 @@ enum AIProvider {
   MOCK
 }
 
+enum JobStatus {
+  INTERESTED
+  APPLIED
+  PHONE_SCREEN
+  INTERVIEWING
+  OFFER_RECEIVED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum JobInterviewType {
+  RECRUITER_SCREEN
+  HIRING_MANAGER
+  TECHNICAL
+  BEHAVIORAL
+  GENERAL
+}
+
+enum JobInterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
 enum SeniorityLevel {
   ENTRY
   MID
@@ -121,6 +146,7 @@ model User {
   creditPurchases   CreditPurchase[]
   usageEvents       UsageEvent[]
   passwordResetTokens PasswordResetToken[]
+  jobInterviews       JobInterview[]
 
   @@map("users")
 }
@@ -207,14 +233,40 @@ model Job {
   salaryMax        Int?
   targetAsk        Int?
   sourceUrl        String?
+  status           JobStatus      @default(INTERESTED)
+  appliedAt        DateTime?
   parsedMetadata   Json?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   interviewSessions InterviewSession[]
+  jobInterviews     JobInterview[]
 
   @@map("jobs")
+}
+
+// ============================================================
+// Job Interviews (scheduled real interviews per prospect)
+// ============================================================
+
+model JobInterview {
+  id          String             @id @default(cuid())
+  jobId       String
+  userId      String
+  type        JobInterviewType   @default(GENERAL)
+  status      JobInterviewStatus @default(SCHEDULED)
+  scheduledAt DateTime?
+  completedAt DateTime?
+  notes       String?            @db.Text
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scheduledAt])
+  @@map("job_interviews")
 }
 
 // ============================================================

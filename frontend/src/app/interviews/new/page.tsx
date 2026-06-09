@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Mic, MessageSquare, ChevronLeft } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -50,11 +50,17 @@ const MODES = [
 ];
 
 export default function NewInterviewPage() {
-  const router = useRouter();
-  const [type, setType]   = useState('TECHNICAL');
-  const [mode, setMode]   = useState<'TEXT' | 'VOICE'>('TEXT');
+  return <Suspense><NewInterviewForm /></Suspense>;
+}
+
+function NewInterviewForm() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+
+  const [type, setType]           = useState(searchParams.get('type') ?? 'TECHNICAL');
+  const [mode, setMode]           = useState<'TEXT' | 'VOICE'>('TEXT');
   const [resumeId, setResumeId]   = useState('');
-  const [jobId, setJobId]         = useState('');
+  const [jobId, setJobId]         = useState(searchParams.get('jobId') ?? '');
   const [resumes, setResumes]     = useState<any[]>([]);
   const [jobs, setJobs]           = useState<any[]>([]);
   const [loading, setLoading]     = useState(false);

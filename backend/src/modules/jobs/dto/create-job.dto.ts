@@ -1,6 +1,6 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUrl } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SeniorityLevel } from '@prisma/client';
+import { JobStatus, SeniorityLevel } from '@prisma/client';
 
 export class CreateJobDto {
   @ApiPropertyOptional()
@@ -51,4 +51,14 @@ export class CreateJobDto {
   @IsUrl()
   @IsOptional()
   sourceUrl?: string;
+
+  @ApiPropertyOptional({ enum: JobStatus })
+  @IsEnum(JobStatus)
+  @IsOptional()
+  status?: JobStatus;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  appliedAt?: string;
 }
