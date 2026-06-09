@@ -1,4 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+import * as mammoth from 'mammoth';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { CreditsService } from '../credits/credits.service';
@@ -92,5 +95,40 @@ export class ResumeService {
     await this.findOne(userId, id);
     await this.prisma.resume.delete({ where: { id } });
     return { message: 'Resume deleted' };
+  }
+
+  async createFromFile(userId: string, file: Express.Multer.File, name?: string) {
+    const rawText = await this.extractText(file.buffer, file.mimetype);
+    return this.create(userId, {
+      name: name || file.originalname.replace(/\.[^.]+$/, '') || 'My Resume',
+      rawText,
+      fileName: file.originalname,
+      fileMimeType: file.mimetype,
+    });
+  }
+
+  private async extractText(buffer: Buffer, mimeType: string): Promise<string> {
+    if (mimeType === 'application/pdf') {
+      const result = await pdfParse(buffer);
+      const text = result.text?.trim();
+      if (!text) throw new BadRequestException('Could not extract text from PDF');
+      return text;
+    }
+
+    if (
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      mimeType === 'application/msword'
+    ) {
+      const result = await mammoth.extractRawText({ buffer });
+      const text = result.value?.trim();
+      if (!text) throw new BadRequestException('Could not extract text from Word document');
+      return text;
+    }
+
+    if (mimeType === 'text/plain') {
+      return buffer.toString('utf-8').trim();
+    }
+
+    throw new BadRequestException('Unsupported file type. Please upload a PDF, Word document, or .txt file.');
   }
 }

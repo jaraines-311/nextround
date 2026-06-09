@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Put, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Get, Put, Patch, Delete, Body, Param, UseGuards, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ResumeService } from './resume.service';
 import { CreateResumeDto } from './dto/create-resume.dto';
@@ -13,9 +14,22 @@ export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Upload or paste a resume (AI-parsed)' })
+  @ApiOperation({ summary: 'Create a resume from pasted text (AI-parsed)' })
   async create(@Request() req, @Body() dto: CreateResumeDto) {
     return this.resumeService.create(req.user.userId, dto);
+  }
+
+  @Post('upload')
+  @ApiOperation({ summary: 'Upload a resume file (PDF, DOCX, TXT) — text extracted automatically' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async upload(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('name') name?: string,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.resumeService.createFromFile(req.user.userId, file, name);
   }
 
   @Get()

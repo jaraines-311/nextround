@@ -9,6 +9,14 @@ export const resumeApi = {
   list: () => apiClient.get('/resumes').then((r) => r.data),
   get: (id: string) => apiClient.get(`/resumes/${id}`).then((r) => r.data),
   create: (data: any) => apiClient.post('/resumes', data).then((r) => r.data),
+  upload: (file: File, name?: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (name) form.append('name', name);
+    return apiClient.post('/resumes/upload', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data);
+  },
   update: (id: string, data: any) => apiClient.put(`/resumes/${id}`, data).then((r) => r.data),
   setActive: (id: string) => apiClient.patch(`/resumes/${id}/activate`).then((r) => r.data),
   remove: (id: string) => apiClient.delete(`/resumes/${id}`).then((r) => r.data),
