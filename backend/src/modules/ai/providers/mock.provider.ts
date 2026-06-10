@@ -59,19 +59,23 @@ export class MockAiProvider implements AiProvider {
       return JSON.stringify({
         matchScore: 72,
         matchLabel: 'Good Match',
-        summary: 'Your backend engineering background aligns well with this role. You have strong experience in the core required technologies, though there are a few specific tools mentioned in the job description that would benefit from clearer emphasis in your resume.',
         strengths: [
-          { area: 'Backend Development', evidence: 'Extensive Node.js/TypeScript experience directly matches the core engineering requirements', matchStrength: 'high' },
-          { area: 'Database Design', evidence: 'PostgreSQL experience and data modeling skills align with the persistence layer requirements', matchStrength: 'high' },
-          { area: 'API Development', evidence: 'REST API design and NestJS experience covers the service architecture requirements', matchStrength: 'medium' },
+          'Enterprise systems architecture and integration experience demonstrates ability to work across complex, distributed systems',
+          'Cloud platform experience with AWS and cloud-native patterns aligns well with cloud provisioning and operational responsibilities',
+          'Backend API design and data pipeline experience supports understanding of system behavior and performance analysis',
+          'Event-driven and API integration background matches the service orchestration requirements in the job description',
         ],
-        weaknesses: [
-          { area: 'Cloud Infrastructure', gap: 'The role requires hands-on AWS experience, but your resume focuses more on application code', hasPotential: true, suggestion: 'Highlight any AWS services you have used in past roles', resumeTip: 'Deployed and maintained services on AWS (EC2, RDS, S3) supporting 50k+ daily active users' },
-          { area: 'CI/CD Pipelines', gap: 'No mention of CI/CD tooling like GitHub Actions or Jenkins, which the job description emphasizes', hasPotential: true, suggestion: 'Add any pipeline or deployment automation experience', resumeTip: 'Built and maintained GitHub Actions CI/CD pipelines reducing deployment time by 40%' },
+        gaps: [
+          'No demonstrated SRE-specific experience: resume lacks mention of incident response, on-call rotations, or post-incident reviews',
+          'Missing observability and monitoring expertise: no mention of APM tools, OpenTelemetry, Grafana, Splunk, dashboarding, or SLI/SLO definition as measurable criteria',
+          'No CI/CD, platform, or infrastructure-as-code experience mentioned: lacks evidence of supporting cloud deployments, staged rollouts, or automated rollbacks',
+          'Limited evidence of production support focus: resume emphasizes business systems architecture and enterprise integration rather than operational reliability and incident management',
         ],
-        tailoringTips: [
-          { section: 'Summary', suggested: 'Senior Backend Engineer with expertise in Node.js, TypeScript, and cloud-native architectures', reason: 'Mirrors the exact job title and core stack keywords for ATS matching' },
-          { section: 'Skills', suggested: 'Add AWS, Docker, Kubernetes, GitHub Actions', reason: 'These keywords appear 4+ times in the job description and are likely in ATS filters' },
+        recommendations: [
+          'Explicitly highlight any experience with incident response or production troubleshooting — frame system integrations as production-critical work requiring high availability',
+          'Add a section detailing hands-on experience with monitoring, logging, or observability tools; if you obtain certifications or contribute to open-source projects demonstrating Grafana, Prometheus, or ELK stack skills',
+          'Quantify and showcase any deployment automation or CI/CD work using specific tools (Jenkins, GitLab CI, GitHub Actions) and describe the scope of systems and infrastructure managed',
+          'Reframe the Head of Technology role to emphasize operational involvement — detail platforms-handled incidents, monitored system health, and managed production workflows across integrated systems',
         ],
       });
     }

@@ -248,42 +248,19 @@ export class JobsService {
     // Normalise — guard against wrong root key or mis-nested response
     const root = result?.analysis ?? result ?? {};
 
-    const toArray = (v: any): any[] => (Array.isArray(v) ? v : []);
-
-    const normalizeStrengths = (items: any[]) =>
-      toArray(items).map((s) =>
-        typeof s === 'string'
-          ? { area: s, evidence: '', matchStrength: 'medium' }
-          : {
-              area: s.area || s.skill || s.title || s.name || s.category || s.strength || '',
-              evidence: s.evidence || s.description || s.detail || s.explanation || s.notes || s.context || '',
-              matchStrength: s.matchStrength || s.level || s.score || 'medium',
-            },
-      );
-
-    const normalizeWeaknesses = (items: any[]) =>
-      toArray(items).map((w) =>
-        typeof w === 'string'
-          ? { area: w, gap: '', hasPotential: false, suggestion: '', resumeTip: '' }
-          : {
-              area: w.area || w.skill || w.title || w.name || w.category || w.gap || '',
-              gap: w.gap || w.issue || w.description || w.detail || w.missing || w.requirement || '',
-              hasPotential: w.hasPotential ?? w.has_potential ?? false,
-              suggestion: w.suggestion || w.recommendation || w.advice || w.action || '',
-              resumeTip: w.resumeTip || w.resume_tip || w.resumeBullet || w.example || w.wording || w.bullet || '',
-            },
-      );
-
-    const normalizeTips = (items: any[]) =>
-      toArray(items).map((t) =>
-        typeof t === 'string'
-          ? { section: 'General', suggested: t, reason: '' }
-          : {
-              section: t.section || t.area || t.part || t.location || 'General',
-              suggested: t.suggested || t.suggestion || t.tip || t.recommendation || t.text || t.wording || t.change || '',
-              reason: t.reason || t.explanation || t.why || t.rationale || '',
-            },
-      );
+    const toStringArray = (v: any): string[] => {
+      if (!Array.isArray(v)) return [];
+      return v.flatMap((item) => {
+        if (typeof item === 'string' && item.trim()) return [item.trim()];
+        if (typeof item === 'object' && item !== null) {
+          const area = item.area || item.skill || item.section || item.title || item.name || '';
+          const detail = item.evidence || item.gap || item.description || item.suggested || item.tip || item.text || item.reason || '';
+          const text = area && detail ? `${area}: ${detail}` : area || detail || '';
+          return text.trim() ? [text.trim()] : [];
+        }
+        return [];
+      });
+    };
 
     const data = {
       resumeId: resume.id,
@@ -291,9 +268,9 @@ export class JobsService {
       matchScore: Math.min(100, Math.max(0, root.matchScore ?? root.match_score ?? 50)),
       matchLabel: root.matchLabel || root.match_label || root.label || 'Partial Match',
       summary: root.summary || root.overview || root.description || '',
-      strengths: normalizeStrengths(root.strengths),
-      weaknesses: normalizeWeaknesses(root.weaknesses || root.gaps || root.areasToImprove || root.areas_to_improve),
-      tailoringTips: normalizeTips(root.tailoringTips || root.tailoring_tips || root.tips || root.recommendations),
+      strengths: toStringArray(root.strengths),
+      weaknesses: toStringArray(root.gaps || root.weaknesses || root.areasToImprove || root.areas_to_improve),
+      tailoringTips: toStringArray(root.recommendations || root.tailoringTips || root.tailoring_tips || root.tips),
       creditsConsumed: COST,
     };
 
