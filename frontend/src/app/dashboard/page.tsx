@@ -65,7 +65,7 @@ function StartInterviewCard() {
           <Mic className="h-3 w-3" />
           Ready to practice
         </div>
-        <h2 className="mt-3 text-xl font-bold">Start a new practice session</h2>
+        <h2 className="mt-3 text-xl font-bold text-white">Start a new practice session</h2>
         <p className="mt-1.5 text-sm text-white/75">
           Choose your interview type, select a job prospect, and the AI will guide you through a realistic practice session.
         </p>
