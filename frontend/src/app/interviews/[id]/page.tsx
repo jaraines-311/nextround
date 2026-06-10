@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Send, CheckCircle, Mic, Square, BarChart3, ChevronRight } from 'lucide-react';
+import { Send, CheckCircle, Mic, BarChart3, ChevronRight, Volume2, AlertCircle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Badge, statusBadgeVariant } from '@/components/ui/badge';
 import { interviewsApi, feedbackApi } from '@/lib/api/interviews';
@@ -76,32 +76,175 @@ function Thinking({ persona }: { persona: typeof PERSONAS[string] }) {
   );
 }
 
-// ─── Voice button ─────────────────────────────────────────────────────────
+// ─── Voice mode hook ──────────────────────────────────────────────────────
 
-function VoiceButton({ isRecording, onClick }: { isRecording: boolean; onClick: () => void }) {
+function useVoiceMode(active: boolean) {
+  const [isSpeaking,  setIsSpeaking]  = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript,  setTranscript]  = useState('');
+  const [supported,   setSupported]   = useState(true);
+
+  const recognitionRef  = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onSubmitRef     = useRef<((t: string) => void) | null>(null);
+  const hasSpokenRef    = useRef(false);
+
+  useEffect(() => {
+    if (!active) return;
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) { setSupported(false); return; }
+
+    const rec = new SR();
+    rec.continuous     = true;
+    rec.interimResults = true;
+    rec.lang           = 'en-US';
+
+    rec.onresult = (e: any) => {
+      const text = Array.from(e.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join('');
+      setTranscript(text);
+      hasSpokenRef.current = true;
+
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        if (hasSpokenRef.current && text.trim()) {
+          onSubmitRef.current?.(text);
+        }
+      }, 2500);
+    };
+
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+    recognitionRef.current = rec;
+
+    return () => { rec.abort(); };
+  }, [active]);
+
+  const speak = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(true);
+
+      const trySpeak = () => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate  = 1.0;
+        utterance.pitch = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(
+          (v) => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Google US') || v.name.includes('Alex'))
+        ) ?? voices.find((v) => v.lang.startsWith('en'));
+        if (preferred) utterance.voice = preferred;
+        utterance.onend   = () => { setIsSpeaking(false); resolve(); };
+        utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length > 0) {
+        trySpeak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => { trySpeak(); };
+      }
+    });
+  }, []);
+
+  const startListening = useCallback((onSubmit: (t: string) => void) => {
+    if (!recognitionRef.current) return;
+    onSubmitRef.current   = onSubmit;
+    hasSpokenRef.current  = false;
+    setTranscript('');
+    try { recognitionRef.current.start(); setIsListening(true); } catch {}
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    try { recognitionRef.current?.stop(); } catch {}
+    setIsListening(false);
+  }, []);
+
+  const cancelSpeech = useCallback(() => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, []);
+
+  return { isSpeaking, isListening, transcript, supported, speak, startListening, stopListening, cancelSpeech };
+}
+
+// ─── Voice interface UI ───────────────────────────────────────────────────
+
+function VoiceInterface({
+  isSpeaking, isListening, transcript, supported, persona, submitting,
+  onManualSubmit, onStopListening,
+}: {
+  isSpeaking: boolean; isListening: boolean; transcript: string;
+  supported: boolean; persona: typeof PERSONAS[string]; submitting: boolean;
+  onManualSubmit: () => void; onStopListening: () => void;
+}) {
+  if (!supported) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+        Voice mode requires Chrome or Edge. Switch to text mode or use a supported browser.
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center gap-3">
-      <button
-        onClick={onClick}
-        className={cn(
-          'relative flex h-20 w-20 items-center justify-center rounded-full shadow-lg transition-all duration-200',
-          isRecording
-            ? 'bg-danger-600 hover:bg-danger-700 scale-110'
-            : 'bg-plum-900 hover:bg-plum-dark hover:scale-105',
-        )}
-      >
-        {isRecording && (
-          <span className="absolute inset-0 rounded-full animate-recording border-4 border-danger-400" />
-        )}
-        {isRecording ? (
-          <Square className="h-6 w-6 text-white" />
-        ) : (
-          <Mic className="h-6 w-6 text-white" />
-        )}
-      </button>
-      <p className="text-sm text-neutral-500">
-        {isRecording ? 'Recording — click to stop' : 'Click to speak'}
-      </p>
+    <div className="flex flex-col items-center gap-4 py-2">
+      {isSpeaking && (
+        <div className="flex flex-col items-center gap-2">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-plum-900 text-sm font-bold text-white">
+            {persona.avatar}
+            <span className="absolute inset-[-4px] rounded-full border-2 border-plum-400 animate-ping opacity-40" />
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-neutral-500">
+            <Volume2 className="h-3.5 w-3.5" />
+            {persona.name} is speaking…
+          </div>
+        </div>
+      )}
+
+      {isListening && (
+        <div className="flex w-full max-w-lg flex-col items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+            </span>
+            <span className="text-sm font-medium text-neutral-600">Listening…</span>
+          </div>
+          {transcript ? (
+            <p className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-center text-sm italic text-neutral-600">
+              "{transcript}"
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-400">Speak your answer — it will submit automatically after a pause</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={onManualSubmit}
+              disabled={!transcript.trim() || submitting}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-plum-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40 hover:bg-plum-dark transition-colors"
+            >
+              <Send className="h-3 w-3" />
+              Submit now
+            </button>
+            <button
+              onClick={onStopListening}
+              className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
+            >
+              Stop
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isSpeaking && !isListening && !submitting && (
+        <div className="flex items-center gap-2">
+          <Mic className="h-4 w-4 text-neutral-300" />
+          <p className="text-sm text-neutral-400">Waiting for next question…</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -120,8 +263,11 @@ export default function InterviewSessionPage() {
   const [answer, setAnswer]         = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading]       = useState(true);
+
+  const isVoiceSession = session?.mode === 'VOICE';
+  const voice = useVoiceMode(isVoiceSession);
+  const spokenTurnIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     interviewsApi.get(id).then((s) => {
@@ -134,29 +280,42 @@ export default function InterviewSessionPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns, submitting]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!answer.trim() || submitting) return;
-    const myAnswer = answer.trim();
-    setAnswer('');
+  const handleSubmit = useCallback(async (voiceAnswer?: string) => {
+    const finalAnswer = (voiceAnswer ?? answer).trim();
+    if (!finalAnswer || submitting) return;
+    if (!voiceAnswer) setAnswer('');
     setSubmitting(true);
 
-    const tempUser = { id: 'tmp', role: 'user', content: myAnswer, turnNumber: turns.length + 1 };
+    const tempUser = { id: 'tmp', role: 'user', content: finalAnswer, turnNumber: turns.length + 1 };
     setTurns((prev) => [...prev, tempUser]);
 
     try {
-      const result = await interviewsApi.answer(id, { answer: myAnswer });
+      const result = await interviewsApi.answer(id, { answer: finalAnswer });
       setTurns((prev) => {
         const without = prev.filter((t) => t.id !== 'tmp');
         return [...without, result.userTurn, { ...result.nextQuestion.turn, content: result.nextQuestion.content }];
       });
     } catch {
       setTurns((prev) => prev.filter((t) => t.id !== 'tmp'));
-      setAnswer(myAnswer);
+      if (!voiceAnswer) setAnswer(finalAnswer);
     } finally {
       setSubmitting(false);
-      setTimeout(() => textareaRef.current?.focus(), 100);
+      if (!voiceAnswer) setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [answer, submitting, id, turns.length]);
+
+  // Auto-speak new AI turns in voice mode, then start listening
+  useEffect(() => {
+    if (!isVoiceSession || !voice.supported || submitting) return;
+    const lastTurn = turns[turns.length - 1];
+    if (!lastTurn || lastTurn.role !== 'assistant' || lastTurn.id === 'tmp') return;
+    if (lastTurn.id === spokenTurnIdRef.current) return;
+    spokenTurnIdRef.current = lastTurn.id;
+
+    voice.speak(lastTurn.content).then(() => {
+      voice.startListening((transcript) => handleSubmit(transcript));
+    });
+  }, [turns, isVoiceSession, voice.supported, submitting]);
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -171,7 +330,6 @@ export default function InterviewSessionPage() {
   };
 
   const isCompleted = session?.status === 'COMPLETED';
-  const isVoice     = session?.mode === 'VOICE';
   const persona     = PERSONAS[session?.type] ?? PERSONAS.TECHNICAL;
 
   const creditTotal =
@@ -267,10 +425,16 @@ export default function InterviewSessionPage() {
         {!isCompleted && (
           <div className="flex-shrink-0 border-t border-neutral-200 bg-neutral-0 px-6 py-4">
             <div className="mx-auto max-w-2xl">
-              {isVoice ? (
-                <VoiceButton
-                  isRecording={isRecording}
-                  onClick={() => setIsRecording((r) => !r)}
+              {isVoiceSession ? (
+                <VoiceInterface
+                  isSpeaking={voice.isSpeaking}
+                  isListening={voice.isListening}
+                  transcript={voice.transcript}
+                  supported={voice.supported}
+                  persona={persona}
+                  submitting={submitting}
+                  onManualSubmit={() => { voice.stopListening(); handleSubmit(voice.transcript); }}
+                  onStopListening={voice.stopListening}
                 />
               ) : (
                 <div className="flex items-end gap-3">
@@ -297,7 +461,7 @@ export default function InterviewSessionPage() {
                     />
                   </div>
                   <button
-                    onClick={handleSubmit}
+                    onClick={() => handleSubmit()}
                     disabled={!answer.trim() || submitting}
                     className="mb-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-plum-900 text-white shadow-xs hover:bg-plum-dark disabled:opacity-40 transition-all hover:shadow-sm"
                   >
