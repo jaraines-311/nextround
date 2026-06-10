@@ -101,7 +101,7 @@ function AddInterviewForm({ onSave, onCancel }: { onSave: (d: any) => void; onCa
         onChange={(e) => setNotes(e.target.value)}
       />
       <div className="flex gap-2">
-        <Button size="sm" onClick={() => onSave({ type, scheduledAt: date || undefined, notes: notes || undefined })}>
+        <Button size="sm" onClick={() => onSave({ type, scheduledAt: date ? new Date(date).toISOString() : undefined, notes: notes || undefined })}>
           Add
         </Button>
         <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
@@ -151,7 +151,7 @@ function EditInterviewForm({ interview, onSave, onCancel }: { interview: any; on
         />
       </div>
       <div className="flex gap-2">
-        <Button size="sm" onClick={() => onSave({ type, status, scheduledAt: date || undefined, notes: notes || undefined })}>
+        <Button size="sm" onClick={() => onSave({ type, status, scheduledAt: date ? new Date(date).toISOString() : undefined, notes: notes || undefined })}>
           <Check className="h-3.5 w-3.5" />
           Save
         </Button>
