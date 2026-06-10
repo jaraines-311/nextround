@@ -109,6 +109,7 @@ function JobMatchAnalysis({ jobId }: { jobId: string }) {
   const [loading, setLoading]   = useState(true);
   const [running, setRunning]   = useState(false);
   const [error, setError]       = useState('');
+  const [justUpdated, setJustUpdated] = useState(false);
 
   useEffect(() => {
     jobsApi.getAnalysis(jobId)
@@ -120,11 +121,15 @@ function JobMatchAnalysis({ jobId }: { jobId: string }) {
   const handleAnalyze = async () => {
     setRunning(true);
     setError('');
+    setJustUpdated(false);
     try {
       const result = await jobsApi.runAnalysis(jobId);
       setAnalysis(result);
+      setJustUpdated(true);
+      setTimeout(() => setJustUpdated(false), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Analysis failed. Check your AI credit balance.');
+      const msg = err.response?.data?.message || err.message || 'Analysis failed. Check your AI credit balance.';
+      setError(msg);
     } finally {
       setRunning(false);
     }
@@ -260,10 +265,20 @@ function JobMatchAnalysis({ jobId }: { jobId: string }) {
             </div>
           )}
 
+          {/* Error (re-analyze failures show here) */}
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Footer */}
           <div className="mt-5 flex items-center justify-between border-t border-neutral-100 pt-4">
             <p className="text-xs text-neutral-400">
-              Analyzed {new Date(analysis.updatedAt).toLocaleDateString()} · {analysis.creditsConsumed} credits
+              {justUpdated
+                ? <span className="text-green-600 font-medium">Updated just now</span>
+                : <>Analyzed {new Date(analysis.updatedAt).toLocaleDateString()} · {analysis.creditsConsumed} credits</>
+              }
             </p>
             <button
               onClick={handleAnalyze}
