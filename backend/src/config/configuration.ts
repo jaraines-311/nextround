@@ -17,7 +17,7 @@ export default () => ({
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     openaiModel: process.env.OPENAI_MODEL || 'gpt-4o',
-    anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022',
+    anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
   },
 
   stripe: {

@@ -13,7 +13,7 @@ export class AnthropicProvider implements AiProvider {
 
   constructor(private readonly config: ConfigService) {
     const apiKey = config.get<string>('ai.anthropicApiKey');
-    this.model = config.get<string>('ai.anthropicModel') || 'claude-3-5-sonnet-20241022';
+    this.model = config.get<string>('ai.anthropicModel') || 'claude-sonnet-4-6';
 
     if (apiKey) {
       this.client = new Anthropic({ apiKey });
