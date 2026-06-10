@@ -3,7 +3,7 @@ import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { CreditsService } from '../credits/credits.service';
-import { JOB_ANALYSIS_PROMPT, JOB_MATCH_ANALYSIS_PROMPT } from '../ai/prompts/interview.prompts';
+import { JOB_ANALYSIS_PROMPT, JOB_MATCH_ANALYSIS_PROMPT, JOB_MATCH_ANALYSIS_SYSTEM_PROMPT } from '../ai/prompts/interview.prompts';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { CreateJobInterviewDto } from './dto/create-job-interview.dto';
@@ -239,10 +239,13 @@ export class JobsService {
       .replace('{{company}}', job.company ?? 'Not specified')
       .replace('{{requiredSkills}}', (job.requiredSkills as string[]).join(', ') || 'Not specified');
 
-    const result = await this.ai.completeJson<any>({
-      messages: [{ role: 'user', content: prompt }],
+    const result = await this.ai.completeJsonWith<any>('anthropic', {
+      messages: [
+        { role: 'system', content: JOB_MATCH_ANALYSIS_SYSTEM_PROMPT },
+        { role: 'user', content: prompt },
+      ],
       temperature: 0.3,
-      maxTokens: 3000,
+      maxTokens: 1024,
     });
 
     // Normalise — guard against wrong root key or mis-nested response

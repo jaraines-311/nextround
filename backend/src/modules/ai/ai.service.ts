@@ -47,6 +47,41 @@ export class AiService {
     }
   }
 
+  // Call a specific provider regardless of the global AI_PROVIDER setting.
+  // Falls back to the global provider if the requested one is unavailable.
+  async completeJsonWith<T>(providerName: 'anthropic' | 'openai' | 'mock', options: AiCompletionOptions): Promise<T> {
+    const providerMap: Record<string, AiProvider> = {
+      anthropic: this.anthropic,
+      openai: this.openai,
+      mock: this.mock,
+    };
+    const target = providerMap[providerName];
+    const effective = target?.isAvailable() ? target : this.provider;
+
+    if (!target?.isAvailable()) {
+      this.logger.warn(`Provider '${providerName}' not available — using ${effective.getName()} instead`);
+    }
+
+    try {
+      const result = await effective.complete({ ...options, jsonMode: true });
+      try {
+        return JSON.parse(result.content) as T;
+      } catch {
+        const match = result.content.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]) as T;
+        throw new Error('AI response was not valid JSON');
+      }
+    } catch (error) {
+      this.logger.error(`AI completion failed on ${effective.getName()}: ${error.message}`);
+      if (this.config.get('nodeEnv') === 'development') {
+        this.logger.warn('Falling back to mock provider');
+        const mockResult = await this.mock.complete({ ...options, jsonMode: true });
+        return JSON.parse(mockResult.content) as T;
+      }
+      throw new ServiceUnavailableException('AI service temporarily unavailable');
+    }
+  }
+
   getProviderName(): string {
     return this.provider.getName();
   }
