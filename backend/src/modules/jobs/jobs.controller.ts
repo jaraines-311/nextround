@@ -44,6 +44,18 @@ export class JobsController {
     return this.jobsService.findOneWithInterviews(req.user.userId, id);
   }
 
+  @Get(':id/analysis')
+  @ApiOperation({ summary: 'Get persisted resume match analysis for a job' })
+  async getJobAnalysis(@Request() req, @Param('id') id: string) {
+    return this.jobsService.getJobAnalysis(req.user.userId, id);
+  }
+
+  @Post(':id/analyze')
+  @ApiOperation({ summary: 'Run AI resume-to-job match analysis (300 credits)' })
+  async analyzeJobMatch(@Request() req, @Param('id') id: string) {
+    return this.jobsService.analyzeJobMatch(req.user.userId, id);
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update a job prospect' })
   async update(@Request() req, @Param('id') id: string, @Body() dto: UpdateJobDto) {

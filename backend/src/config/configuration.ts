@@ -41,6 +41,7 @@ export default () => ({
       questionGeneration: parseInt(process.env.QUESTION_GENERATION_CREDIT_COST, 10) || 20,
       resumeAnalysis: parseInt(process.env.RESUME_ANALYSIS_CREDIT_COST, 10) || 75,
       jobAnalysis: parseInt(process.env.JOB_ANALYSIS_CREDIT_COST, 10) || 50,
+      jobMatchAnalysis: parseInt(process.env.JOB_MATCH_ANALYSIS_CREDIT_COST, 10) || 300,
     },
   },
 

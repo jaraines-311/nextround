@@ -28,5 +28,6 @@ export type AiFeature =
   | 'question_generation'
   | 'resume_analysis'
   | 'job_analysis'
+  | 'job_match_analysis'
   | 'feedback_generation'
   | 'interview_turn';

@@ -274,6 +274,7 @@ export class CreditsService {
       question_generation: costs.questionGeneration,
       resume_analysis: costs.resumeAnalysis,
       job_analysis: costs.jobAnalysis,
+      job_match_analysis: costs.jobMatchAnalysis,
     };
     return map[feature] ?? 10;
   }

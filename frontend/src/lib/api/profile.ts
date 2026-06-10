@@ -33,6 +33,8 @@ export const jobsApi = {
   addInterview: (jobId: string, data: any) => apiClient.post(`/jobs/${jobId}/interviews`, data).then((r) => r.data),
   updateInterview: (interviewId: string, data: any) => apiClient.patch(`/jobs/interviews/${interviewId}`, data).then((r) => r.data),
   deleteInterview: (interviewId: string) => apiClient.delete(`/jobs/interviews/${interviewId}`).then((r) => r.data),
+  getAnalysis: (jobId: string) => apiClient.get(`/jobs/${jobId}/analysis`).then((r) => r.data),
+  runAnalysis: (jobId: string) => apiClient.post(`/jobs/${jobId}/analyze`).then((r) => r.data),
 };
 
 export const analyticsApi = {

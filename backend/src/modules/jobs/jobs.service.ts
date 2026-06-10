@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { CreditsService } from '../credits/credits.service';
-import { JOB_ANALYSIS_PROMPT } from '../ai/prompts/interview.prompts';
+import { JOB_ANALYSIS_PROMPT, JOB_MATCH_ANALYSIS_PROMPT } from '../ai/prompts/interview.prompts';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { CreateJobInterviewDto } from './dto/create-job-interview.dto';
@@ -193,5 +193,82 @@ export class JobsService {
     await this.findOne(userId, id);
     await this.prisma.job.delete({ where: { id } });
     return { message: 'Job deleted' };
+  }
+
+  async getJobAnalysis(userId: string, jobId: string) {
+    await this.findOne(userId, jobId);
+    const analysis = await this.prisma.jobAnalysis.findUnique({ where: { jobId } });
+    if (!analysis) return null;
+
+    let isStale = false;
+    if (analysis.resumeId) {
+      const resume = await this.prisma.resume.findUnique({
+        where: { id: analysis.resumeId },
+        select: { updatedAt: true },
+      });
+      if (resume && analysis.resumeUpdatedAt) {
+        isStale = resume.updatedAt.getTime() > new Date(analysis.resumeUpdatedAt).getTime();
+      }
+    }
+
+    return { ...analysis, isStale };
+  }
+
+  async analyzeJobMatch(userId: string, jobId: string) {
+    const COST = this.credits.getCostForFeature('job_match_analysis');
+
+    const canAfford = await this.credits.canAfford(userId, COST);
+    if (!canAfford) {
+      throw new ForbiddenException(`Insufficient AI credits. This analysis costs ${COST} credits.`);
+    }
+
+    const job = await this.findOne(userId, jobId);
+
+    const resume = await this.prisma.resume.findFirst({
+      where: { userId, isActive: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!resume) {
+      throw new BadRequestException('Upload a resume before running a match analysis.');
+    }
+
+    const prompt = JOB_MATCH_ANALYSIS_PROMPT
+      .replace('{{resumeText}}', resume.rawText.slice(0, 8000))
+      .replace('{{jobDescription}}', job.rawDescription.slice(0, 6000))
+      .replace('{{jobTitle}}', job.title)
+      .replace('{{company}}', job.company ?? 'Not specified')
+      .replace('{{requiredSkills}}', (job.requiredSkills as string[]).join(', ') || 'Not specified');
+
+    const result = await this.ai.completeJson<any>({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    });
+
+    const data = {
+      resumeId: resume.id,
+      resumeUpdatedAt: resume.updatedAt,
+      matchScore: Math.min(100, Math.max(0, result.matchScore ?? 50)),
+      matchLabel: result.matchLabel ?? 'Partial Match',
+      summary: result.summary ?? '',
+      strengths: result.strengths ?? [],
+      weaknesses: result.weaknesses ?? [],
+      tailoringTips: result.tailoringTips ?? [],
+      creditsConsumed: COST,
+    };
+
+    const analysis = await this.prisma.jobAnalysis.upsert({
+      where: { jobId },
+      create: { jobId, userId, ...data },
+      update: data,
+    });
+
+    await this.credits.consume({
+      userId,
+      amount: COST,
+      feature: 'job_match_analysis',
+      metadata: { jobId },
+    });
+
+    return { ...analysis, isStale: false };
   }
 }

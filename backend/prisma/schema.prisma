@@ -147,6 +147,7 @@ model User {
   usageEvents       UsageEvent[]
   passwordResetTokens PasswordResetToken[]
   jobInterviews       JobInterview[]
+  jobAnalyses         JobAnalysis[]
 
   @@map("users")
 }
@@ -242,8 +243,35 @@ model Job {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   interviewSessions InterviewSession[]
   jobInterviews     JobInterview[]
+  jobAnalysis       JobAnalysis?
 
   @@map("jobs")
+}
+
+// ============================================================
+// Job-Resume Match Analysis
+// ============================================================
+
+model JobAnalysis {
+  id              String    @id @default(cuid())
+  jobId           String    @unique
+  userId          String
+  resumeId        String?
+  resumeUpdatedAt DateTime?
+  matchScore      Int
+  matchLabel      String
+  summary         String    @db.Text
+  strengths       Json
+  weaknesses      Json
+  tailoringTips   Json
+  creditsConsumed Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("job_analyses")
 }
 
 // ============================================================

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Plus, Trash2, ExternalLink, Pencil, Check, X } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, ExternalLink, Pencil, Check, X, Sparkles, ChevronDown, ChevronUp, AlertTriangle, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,6 +98,217 @@ function AddInterviewForm({ onSave, onCancel }: { onSave: (d: any) => void; onCa
         </Button>
         <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
+    </div>
+  );
+}
+
+// ── Match score ring ───────────────────────────────────────────────────────
+
+function MatchRing({ score }: { score: number }) {
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const label = score >= 85 ? 'Strong Match' : score >= 70 ? 'Good Match' : score >= 50 ? 'Partial Match' : 'Weak Match';
+  const color = score >= 85 ? '#16a34a' : score >= 70 ? '#2563eb' : score >= 50 ? '#d97706' : '#dc2626';
+
+  return (
+    <div className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center">
+      <svg className="-rotate-90 absolute" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r={r} fill="none" stroke="#f0f0f0" strokeWidth="7" />
+        <circle
+          cx="40" cy="40" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - score / 100)}
+          style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}
+        />
+      </svg>
+      <div className="text-center">
+        <p className="text-xl font-extrabold text-neutral-900 tabular-nums leading-none">{score}</p>
+        <p className="text-2xs text-neutral-400">/100</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Job match analysis card ────────────────────────────────────────────────
+
+function JobMatchAnalysis({ jobId }: { jobId: string }) {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
+  const [running, setRunning]   = useState(false);
+  const [error, setError]       = useState('');
+  const [showTips, setShowTips] = useState(false);
+
+  useEffect(() => {
+    jobsApi.getAnalysis(jobId)
+      .then(setAnalysis)
+      .catch(() => setAnalysis(null))
+      .finally(() => setLoading(false));
+  }, [jobId]);
+
+  const handleAnalyze = async () => {
+    setRunning(true);
+    setError('');
+    try {
+      const result = await jobsApi.runAnalysis(jobId);
+      setAnalysis(result);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Analysis failed. Check your AI credit balance.');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const scoreColor = (score: number) =>
+    score >= 85 ? 'text-green-700' : score >= 70 ? 'text-plum-900' : score >= 50 ? 'text-amber-700' : 'text-danger-600';
+
+  const matchBadgeClass = (label: string) => {
+    if (label === 'Strong Match') return 'bg-green-100 text-green-800';
+    if (label === 'Good Match')   return 'bg-plum-100 text-plum-900';
+    if (label === 'Partial Match') return 'bg-amber-100 text-amber-800';
+    return 'bg-danger-50 text-danger-600';
+  };
+
+  if (loading) {
+    return (
+      <div className="card p-5">
+        <div className="h-4 w-40 animate-pulse rounded-full bg-neutral-100" />
+        <div className="mt-3 h-3 w-full animate-pulse rounded-full bg-neutral-100" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-plum-900" />
+          <h2 className="text-sm font-semibold text-neutral-900">Resume Match Analysis</h2>
+        </div>
+        {analysis && (
+          <button
+            onClick={handleAnalyze}
+            disabled={running}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3 w-3 ${running ? 'animate-spin' : ''}`} />
+            Re-analyze
+          </button>
+        )}
+      </div>
+
+      {!analysis ? (
+        <div className="text-center py-4">
+          <p className="text-sm text-neutral-500 mb-1">Compare this role against your active resume.</p>
+          <p className="text-xs text-neutral-400 mb-4">Identifies strengths, gaps, and specific wording to add. Costs 300 credits.</p>
+          {error && <p className="mb-3 text-xs text-danger-600">{error}</p>}
+          <Button size="sm" onClick={handleAnalyze} loading={running}>
+            <Sparkles className="h-3.5 w-3.5" />
+            {running ? 'Analyzing…' : 'Analyze match'}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Stale banner */}
+          {analysis.isStale && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+              Your resume has been updated since this analysis. Re-analyze for current results.
+            </div>
+          )}
+
+          {/* Score + summary */}
+          <div className="flex items-start gap-4">
+            <MatchRing score={analysis.matchScore} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${matchBadgeClass(analysis.matchLabel)}`}>
+                  {analysis.matchLabel}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-600 leading-relaxed">{analysis.summary}</p>
+            </div>
+          </div>
+
+          {/* Strengths */}
+          {analysis.strengths?.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Where you're strong</h3>
+              <div className="space-y-2">
+                {analysis.strengths.map((s: any, i: number) => (
+                  <div key={i} className="flex items-start gap-2.5 rounded-lg bg-green-50 px-3 py-2.5">
+                    <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-green-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-green-900">{s.area}</p>
+                      <p className="text-xs text-green-700 mt-0.5">{s.evidence}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Weaknesses */}
+          {analysis.weaknesses?.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Areas to strengthen</h3>
+              <div className="space-y-2">
+                {analysis.weaknesses.map((w: any, i: number) => (
+                  <div key={i} className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-neutral-900">{w.area}</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">{w.gap}</p>
+                        {w.hasPotential && w.resumeTip && (
+                          <div className="mt-2 rounded-md border border-plum-200 bg-plum-50 px-2.5 py-2">
+                            <p className="text-2xs font-semibold text-plum-900 mb-1">💡 If you have this experience, add to your resume:</p>
+                            <p className="text-2xs text-plum-800 italic">"{w.resumeTip}"</p>
+                          </div>
+                        )}
+                        {!w.hasPotential && w.suggestion && (
+                          <p className="mt-1.5 text-2xs text-neutral-400">{w.suggestion}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tailoring tips — collapsible */}
+          {analysis.tailoringTips?.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowTips((t) => !t)}
+                className="flex w-full items-center justify-between rounded-lg px-0 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:text-neutral-700 transition-colors"
+              >
+                Resume tailoring tips
+                {showTips ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+              {showTips && (
+                <div className="mt-2 space-y-2">
+                  {analysis.tailoringTips.map((t: any, i: number) => (
+                    <div key={i} className="rounded-lg border border-plum-200 bg-plum-50 px-3 py-2.5">
+                      <p className="text-2xs font-semibold text-plum-900 mb-0.5">{t.section}</p>
+                      <p className="text-xs text-plum-800 mb-1 italic">"{t.suggested}"</p>
+                      <p className="text-2xs text-neutral-500">{t.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-2xs text-neutral-400">
+            Analyzed {new Date(analysis.updatedAt).toLocaleDateString()} · {analysis.creditsConsumed} credits used
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -311,6 +522,9 @@ export default function JobDetailPage() {
             </a>
           )}
         </div>
+
+        {/* ── Match analysis ── */}
+        {job && <JobMatchAnalysis jobId={id} />}
 
         {/* ── Interviews card ── */}
         <div className="card p-5">
