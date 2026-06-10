@@ -242,17 +242,23 @@ export class JobsService {
     const result = await this.ai.completeJson<any>({
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
+      maxTokens: 3000,
     });
+
+    // Normalise — guard against wrong root key or mis-nested response
+    const root = result?.analysis ?? result ?? {};
+
+    const toArray = (v: any) => (Array.isArray(v) ? v : []);
 
     const data = {
       resumeId: resume.id,
       resumeUpdatedAt: resume.updatedAt,
-      matchScore: Math.min(100, Math.max(0, result.matchScore ?? 50)),
-      matchLabel: result.matchLabel ?? 'Partial Match',
-      summary: result.summary ?? '',
-      strengths: result.strengths ?? [],
-      weaknesses: result.weaknesses ?? [],
-      tailoringTips: result.tailoringTips ?? [],
+      matchScore: Math.min(100, Math.max(0, root.matchScore ?? 50)),
+      matchLabel: root.matchLabel ?? 'Partial Match',
+      summary: root.summary ?? '',
+      strengths: toArray(root.strengths),
+      weaknesses: toArray(root.weaknesses),
+      tailoringTips: toArray(root.tailoringTips),
       creditsConsumed: COST,
     };
 
