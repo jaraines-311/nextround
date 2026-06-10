@@ -55,25 +55,39 @@ Return as JSON:
 Resume text:
 {{resumeText}}`;
 
-export const JOB_MATCH_ANALYSIS_PROMPT = `You are an expert technical recruiter and career coach. Analyze how well this candidate's resume matches the job description and provide specific, actionable guidance.
+export const JOB_MATCH_ANALYSIS_PROMPT = `You are an expert technical recruiter and career coach. Analyze exactly how this specific resume matches this specific job description. Every item must be grounded in the actual text of both documents — no generic advice.
 
 Return ONLY a valid JSON object:
 {
   "matchScore": <number 0-100>,
   "matchLabel": "<Strong Match|Good Match|Partial Match|Weak Match>",
   "strengths": [
-    "<One full sentence describing a specific matching strength or qualification from the resume>"
+    "<sentence>"
   ],
   "gaps": [
-    "<One or two sentences describing a specific gap, missing skill, or requirement not clearly addressed in the resume>"
+    "<sentence>"
   ],
   "recommendations": [
-    "<One actionable sentence advising how to improve the resume or application for this role>"
+    "<sentence>"
   ]
 }
 
+Rules for strengths:
+- Name the actual skill, tool, or experience from the resume and map it to a named requirement from the job description.
+- Example: "Cloud platform experience with AWS and cloud-native patterns aligns with the cloud provisioning and operational responsibilities outlined in the job description."
+
+Rules for gaps:
+- Use the pattern: "No [X]: resume lacks mention of [specific things the JD requires]."
+- Name the exact tools, certifications, or experience areas the JD calls for that are absent from the resume.
+- Example: "No observability or monitoring expertise: resume lacks mention of APM tools, OpenTelemetry, Grafana, Splunk, or SLI/SLO definition — all explicitly required in the job description."
+
+Rules for recommendations:
+- Reference specific sections of the candidate's resume by name — actual job titles, companies, or products that appear in the resume.
+- Tell them exactly what to highlight, reframe, or add, naming the tools or keywords from the JD.
+- Example: "Reframe the 'Head of Technology' role to emphasize operational involvement — detail incidents handled, system health monitoring, and production workflows."
+
 Scoring: 85-100 = Strong Match · 70-84 = Good Match · 50-69 = Partial Match · 0-49 = Weak Match
-Include 3-5 strengths, 2-5 gaps, and 3-5 recommendations. Be specific — reference actual resume content and actual job requirements by name.
+Include 3-5 strengths, 3-5 gaps, and 3-5 recommendations.
 
 Resume:
 {{resumeText}}
