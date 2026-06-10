@@ -57,7 +57,15 @@ function daysUntil(date: string) {
   return `in ${d}d`;
 }
 
-// ── Add interview modal ─────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function toDatetimeLocal(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// ── Add interview form ───────────────────────────────────────────────────────
 
 function AddInterviewForm({ onSave, onCancel }: { onSave: (d: any) => void; onCancel: () => void }) {
   const [type, setType]   = useState('RECRUITER_SCREEN');
@@ -95,6 +103,57 @@ function AddInterviewForm({ onSave, onCancel }: { onSave: (d: any) => void; onCa
       <div className="flex gap-2">
         <Button size="sm" onClick={() => onSave({ type, scheduledAt: date || undefined, notes: notes || undefined })}>
           Add
+        </Button>
+        <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit interview form ──────────────────────────────────────────────────────
+
+function EditInterviewForm({ interview, onSave, onCancel }: { interview: any; onSave: (d: any) => void; onCancel: () => void }) {
+  const [type,   setType]   = useState(interview.type ?? 'GENERAL');
+  const [status, setStatus] = useState(interview.status ?? 'SCHEDULED');
+  const [date,   setDate]   = useState(interview.scheduledAt ? toDatetimeLocal(interview.scheduledAt) : '');
+  const [notes,  setNotes]  = useState(interview.notes ?? '');
+
+  const selectClass = 'w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-plum-400';
+
+  return (
+    <div className="rounded-xl border border-plum-200 bg-plum-50/20 p-4 space-y-3">
+      <p className="text-xs font-semibold text-neutral-700">Edit interview</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
+          <select value={type} onChange={(e) => setType(e.target.value)} className={selectClass}>
+            {INTERVIEW_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-neutral-600 mb-1">Status</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass}>
+            {INTERVIEW_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          </select>
+        </div>
+        <Input
+          label="Scheduled date"
+          type="datetime-local"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <Input
+          label="Notes"
+          optional
+          placeholder="Location, interviewer name, topics…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={() => onSave({ type, status, scheduledAt: date || undefined, notes: notes || undefined })}>
+          <Check className="h-3.5 w-3.5" />
+          Save
         </Button>
         <Button size="sm" variant="secondary" onClick={onCancel}>Cancel</Button>
       </div>
@@ -304,6 +363,7 @@ export default function JobDetailPage() {
   const [saving, setSaving]   = useState(false);
   const [editing, setEditing] = useState(false);
   const [showAddInterview, setShowAddInterview] = useState(false);
+  const [editingInterviewId, setEditingInterviewId] = useState<string | null>(null);
 
   // Edit form state
   const [title,     setTitle]     = useState('');
@@ -528,6 +588,20 @@ export default function JobDetailPage() {
           ) : (
             <div className="space-y-2">
               {job?.jobInterviews?.map((interview: any) => {
+                if (editingInterviewId === interview.id) {
+                  return (
+                    <EditInterviewForm
+                      key={interview.id}
+                      interview={interview}
+                      onSave={async (data) => {
+                        await handleUpdateInterview(interview.id, data);
+                        setEditingInterviewId(null);
+                      }}
+                      onCancel={() => setEditingInterviewId(null)}
+                    />
+                  );
+                }
+
                 const isPast = interview.scheduledAt && new Date(interview.scheduledAt) < new Date();
                 return (
                   <div key={interview.id} className={`flex items-center gap-3 rounded-xl border p-3 ${
@@ -573,6 +647,13 @@ export default function JobDetailPage() {
                           </button>
                         </>
                       )}
+                      <button
+                        onClick={() => setEditingInterviewId(interview.id)}
+                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
+                        title="Edit interview"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         onClick={() => handleDeleteInterview(interview.id)}
                         className="rounded-lg p-1.5 text-neutral-400 hover:bg-danger-50 hover:text-danger-600 transition-colors"
