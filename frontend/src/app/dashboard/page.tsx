@@ -54,7 +54,7 @@ function StartInterviewCard() {
   return (
     <div
       className="relative overflow-hidden rounded-xl p-6 text-white"
-      style={{ background: 'linear-gradient(135deg, #4A154B 0%, #7a1e8a 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #0E1D30 0%, #1559C0 100%)' }}
     >
       {/* Decorative rings */}
       <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full border border-white/10" />
@@ -70,7 +70,7 @@ function StartInterviewCard() {
           Choose your interview type, select a job prospect, and the AI will guide you through a realistic practice session.
         </p>
         <Link href="/interviews/new">
-          <button className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-plum-900 shadow-sm hover:bg-white/90 transition-colors">
+          <button className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-white/90 transition-colors">
             <Plus className="h-4 w-4" />
             New interview
           </button>

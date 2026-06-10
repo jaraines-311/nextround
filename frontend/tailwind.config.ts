@@ -10,19 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary plum palette (Slack-inspired)
+        // Primary brand palette (dark navy + vivid blue)
         plum: {
-          50:  '#fdf4fe',
-          100: '#f9e8fc',
-          200: '#f2d0f7',
-          300: '#e7adf0',
-          400: '#d77de5',
-          500: '#c254d5',
-          600: '#a836bb',
-          700: '#7a1e8a',
-          800: '#611f64', // Slack active sidebar item
-          900: '#4A154B', // Slack sidebar / our primary
-          950: '#2e0b2f',
+          50:   '#eff6ff',   // light tint — selected card backgrounds
+          100:  '#dbeafe',   // badge backgrounds
+          200:  '#bfdbfe',   // border tints
+          300:  '#93c5fd',   // text on dark backgrounds
+          400:  '#60a5fa',   // sidebar accents, focus rings
+          500:  '#3b82f6',
+          600:  '#2563eb',   // icon color
+          700:  '#1d4ed8',
+          800:  '#1e40af',
+          900:  '#1559C0',   // PRIMARY: vivid royal blue — buttons, links, selected states
+          950:  '#1040A0',
+          dark: '#124FB0',   // hover / deeper variant
         },
         // Neutral grays — warm, not cold
         neutral: {

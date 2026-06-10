@@ -6,11 +6,11 @@
 @layer base {
   :root {
     /* Core palette */
-    --color-plum:         #4A154B;
-    --color-plum-dark:    #3d1140;
-    --color-plum-light:   #611f64;
-    --color-plum-muted:   #7a1e8a;
-    --color-plum-surface: #fdf4fe;
+    --color-plum:         #1559C0;
+    --color-plum-dark:    #124FB0;
+    --color-plum-light:   #2563eb;
+    --color-plum-muted:   #3b82f6;
+    --color-plum-surface: #eff6ff;
 
     /* Surface */
     --color-bg:           #ffffff;
@@ -25,10 +25,10 @@
     --color-text-subtle:  #868686;
     --color-text-on-plum: #ffffff;
 
-    /* Sidebar (dark plum) */
-    --sidebar-bg:         #4A154B;
+    /* Sidebar (dark navy) */
+    --sidebar-bg:         #152030;
     --sidebar-item-hover: rgba(255,255,255,0.08);
-    --sidebar-item-active:#611f64;
+    --sidebar-item-active:#1D2E44;
     --sidebar-text:       rgba(255,255,255,0.88);
     --sidebar-text-muted: rgba(255,255,255,0.60);
     --sidebar-border:     rgba(255,255,255,0.10);
@@ -140,7 +140,7 @@
 
   /* Gradient text */
   .text-gradient {
-    background: linear-gradient(135deg, #4A154B 0%, #7a1e8a 100%);
+    background: linear-gradient(135deg, #152030 0%, #1559C0 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

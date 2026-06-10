@@ -28,7 +28,7 @@ function ScoreRing({ score }: { score: number }) {
         <circle
           cx="80" cy="80" r="52"
           fill="none"
-          stroke="#4A154B"
+          stroke="#1559C0"
           strokeWidth="12"
           strokeLinecap="round"
           strokeDasharray={circ}

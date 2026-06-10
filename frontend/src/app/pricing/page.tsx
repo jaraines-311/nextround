@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
+import { NrSymbol } from '@/components/brand/NrSymbol';
 
 const plans = [
   {
@@ -68,11 +69,11 @@ export default function PricingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-plum-900">
-              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+              <NrSymbol className="h-5 w-5" />
             </div>
-            <span className="text-[15px] font-bold text-neutral-900">NextRound</span>
+            <span className="text-[15px] font-bold text-neutral-900">
+              <span>Next</span><span className="text-plum-900">Round</span>
+            </span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/auth/login" className="text-sm font-medium text-neutral-600 hover:text-neutral-900">Sign in</Link>

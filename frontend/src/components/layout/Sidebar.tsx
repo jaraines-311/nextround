@@ -4,9 +4,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, MessageSquare, Briefcase, BarChart3,
-  User, CreditCard, Settings, LogOut, ShieldCheck, Zap,
+  User, CreditCard, Settings, LogOut, ShieldCheck,
   ChevronRight,
 } from 'lucide-react';
+import { NrSymbol } from '@/components/brand/NrSymbol';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth.store';
 import { formatCredits } from '@/lib/utils';
@@ -68,10 +69,11 @@ export function Sidebar() {
         className="flex h-14 items-center gap-2.5 px-4"
         style={{ borderBottom: '1px solid var(--sidebar-border)' }}
       >
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/15">
-          <Zap className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-[15px] font-bold text-white tracking-tight">NextRound</span>
+        <NrSymbol className="h-7 w-7 flex-shrink-0" />
+        <span className="text-[15px] font-bold tracking-tight">
+          <span className="text-white">Next</span>
+          <span style={{ color: '#60a5fa' }}>Round</span>
+        </span>
       </div>
 
       {/* User / workspace */}

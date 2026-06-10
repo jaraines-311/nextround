@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Mic, MessageSquare, Star, BarChart3, ChevronRight } from 'lucide-react';
+import { NrSymbol } from '@/components/brand/NrSymbol';
 
 // ─── Nav ───────────────────────────────────────────────────────────────────
 
@@ -9,11 +10,11 @@ function Nav() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-plum-900">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            <NrSymbol className="h-5 w-5" />
           </div>
-          <span className="text-[15px] font-bold text-neutral-900 tracking-tight">NextRound</span>
+          <span className="text-[15px] font-bold text-neutral-900 tracking-tight">
+            <span>Next</span><span className="text-plum-900">Round</span>
+          </span>
         </div>
         <nav className="hidden items-center gap-7 md:flex">
           <Link href="/pricing" className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">Pricing</Link>
@@ -375,9 +376,7 @@ function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded bg-plum-900">
-            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            <NrSymbol className="h-4 w-4" />
           </div>
           <span className="text-sm font-bold text-neutral-900">NextRound</span>
         </div>
